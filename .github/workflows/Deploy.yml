@@ -25,11 +25,15 @@ jobs:
       - name: Build with Maven
         run: mvn clean package
 
-      # Step 4: Rename the WAR file (optional)
+      # Step 4: Rename the WAR file
       - name: Rename WAR file
         run: mv target/java-hello-app-1.0-SNAPSHOT.war target/java-hello-app.war
 
-      # Step 5: Ensure the webapps directory exists and set correct permissions on the EC2 instance
+      # Step 5: Debugging Step - Verify the target directory exists
+      - name: List contents of the target directory
+        run: ls -l /home/runner/work/Host-resume-ec2/Host-resume-ec2/target/
+
+      # Step 6: Ensure the webapps directory exists and set correct permissions on the EC2 instance
       - name: Ensure correct permissions on /var/lib/tomcat9/webapps/
         uses: appleboy/ssh-action@master
         with:
@@ -41,7 +45,7 @@ jobs:
             sudo chown -R tomcat:tomcat /var/lib/tomcat9/webapps/
             sudo chmod -R 775 /var/lib/tomcat9/webapps/
 
-      # Step 6: Deploy the renamed WAR file to EC2 using sudo for rsync
+      # Step 7: Deploy the renamed WAR file to EC2 using sudo for rsync
       - name: Deploy WAR file with sudo
         uses: appleboy/ssh-action@master
         with:
@@ -51,7 +55,7 @@ jobs:
           script: |
             sudo rsync -avz /home/runner/work/Host-resume-ec2/Host-resume-ec2/target/java-hello-app.war /var/lib/tomcat9/webapps/
 
-      # Step 7: Restart Tomcat on EC2
+      # Step 8: Restart Tomcat on EC2
       - name: Restart Tomcat
         uses: appleboy/ssh-action@master
         with:
