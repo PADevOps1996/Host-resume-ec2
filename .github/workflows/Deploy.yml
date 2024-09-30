@@ -33,17 +33,16 @@ jobs:
       - name: Verify WAR file exists
         run: ls -l target/
 
-      # Step 6: Create SSH private key file
-      - name: Add SSH Key
-        run: |
-          echo "${{ secrets.EC2_SSH_KEY }}" > /home/runner/.ssh/id_rsa
-          chmod 600 /home/runner/.ssh/id_rsa
-
-      # Step 7: Use rsync from GitHub runner to transfer WAR file to EC2
-      - name: Rsync WAR file to EC2
-        run: |
-          rsync -avz -e "ssh -o StrictHostKeyChecking=no -i /home/runner/.ssh/id_rsa" target/java-hello-app.war ${{ secrets.USERNAME }}@${{ secrets.HOST_DNS }}:/var/lib/tomcat9/webapps/
-
+     
+      - name: Executing remote ssh commands using ssh key
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST_DNS }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd home
+            sudo mv * /var/lib/tomcat9/webapps/
       # Step 8: Restart Tomcat on EC2
       - name: Restart Tomcat
         uses: appleboy/ssh-action@master
