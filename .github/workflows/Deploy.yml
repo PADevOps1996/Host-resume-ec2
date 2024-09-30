@@ -1,4 +1,4 @@
-name: Deploy Java Hello App to EC2
+name: Deploy Java App to EC2
 
 on:
   push:
@@ -15,21 +15,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Step 2: Set up JDK 11
-      - name: Set up JDK 11
+      # Step 2: Set up JDK 17
+      - name: Set up JDK 17
         uses: actions/setup-java@v1
         with:
-          java-version: '11'
+          java-version: '17'
 
       # Step 3: Build the WAR file using Maven
       - name: Build with Maven
         run: mvn clean package
 
       # Step 4: Verify if the WAR file exists
-      - name: Verify if WAR file exists
+      - name: Verify WAR file exists
         run: ls -l target/
 
-      # Step 5: Create webapps directory on remote host if not exists
+      # Step 5: Ensure the webapps directory exists on the EC2 instance
       - name: Ensure webapps directory on EC2
         uses: appleboy/ssh-action@master
         with:
@@ -38,9 +38,9 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             sudo mkdir -p /var/lib/tomcat9/webapps/
-            sudo chown tomcat:tomcat /var/lib/tomcat9/webapps/
+            sudo chown -R tomcat:tomcat /var/lib/tomcat9/webapps/
 
-      # Step 6: Deploy to EC2 via rsync
+      # Step 6: Deploy WAR file to EC2
       - name: Deploy to EC2
         uses: easingthemes/ssh-deploy@main
         env:
@@ -58,5 +58,4 @@ jobs:
           host: ${{ secrets.HOST_DNS }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            sudo systemctl restart tomcat9
+          script: sudo systemctl restart tomcat9
