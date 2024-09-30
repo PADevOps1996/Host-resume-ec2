@@ -1,18 +1,19 @@
-name: Deploy Java App to EC2
+name: Push-to-EC2
 
+# Trigger deployment only on push to main branch
 on:
   push:
     branches:
       - main
 
 jobs:
-  build:
-    name: Build and Deploy to EC2
+  deploy:
+    name: Deploy to EC2 on main branch push
     runs-on: ubuntu-latest
 
     steps:
       # Step 1: Checkout the repository
-      - name: Checkout code
+      - name: Checkout the files
         uses: actions/checkout@v2
 
       # Step 2: Set up JDK 17
@@ -25,29 +26,23 @@ jobs:
       - name: Build with Maven
         run: mvn clean package
 
-      # Step 4: Rename the WAR file
-      - name: Rename WAR file
-        run: mv target/java-hello-app-1.0-SNAPSHOT.war target/java-hello-app.war
-
-      # Step 5: List contents of the target directory to verify the WAR file exists
-      - name: Verify WAR file exists
-        run: ls -l target/
-
-     
-      - name: Executing remote ssh commands using ssh key
-        uses: appleboy/ssh-action@master
+      # Step 4: Deploy to Server using easingthemes/ssh-deploy
+      - name: Deploy WAR to Server
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.HOST_DNS }}
+          REMOTE_USER: ${{ secrets.USERNAME }}
         with:
-          host: ${{ secrets.HOST_DNS }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd home
-            sudo mv java-hello-app.war /var/lib/tomcat9/webapps/
-      # Step 8: Restart Tomcat on EC2
+          source: target/java-hello-app-1.0-SNAPSHOT.war
+          target: /var/lib/tomcat9/webapps/
+
+      # Step 5: Executing remote SSH commands to restart Tomcat
       - name: Restart Tomcat
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST_DNS }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          script: sudo systemctl restart tomcat9
+          script: |
+            sudo systemctl restart tomcat9
