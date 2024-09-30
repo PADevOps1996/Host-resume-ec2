@@ -42,7 +42,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd home
-            sudo mv * /var/lib/tomcat9/webapps/
+            sudo mv java-hello-app.war /var/lib/tomcat9/webapps/
       # Step 8: Restart Tomcat on EC2
       - name: Restart Tomcat
         uses: appleboy/ssh-action@master
