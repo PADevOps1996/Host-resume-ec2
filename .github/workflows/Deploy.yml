@@ -49,7 +49,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            sudo rsync -avz target/java-hello-app.war /var/lib/tomcat9/webapps/
+            sudo rsync -avz /home/runner/work/Host-resume-ec2/Host-resume-ec2/target/java-hello-app.war /var/lib/tomcat9/webapps/
 
       # Step 7: Restart Tomcat on EC2
       - name: Restart Tomcat
