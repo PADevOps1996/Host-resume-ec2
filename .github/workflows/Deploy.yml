@@ -1,6 +1,5 @@
-name: Push-to-EC2
+name: Deploy Java App to EC2
 
-# Trigger deployment only on push to main branch
 on:
   push:
     branches:
@@ -26,7 +25,19 @@ jobs:
       - name: Build with Maven
         run: mvn clean package
 
-      # Step 4: Deploy to Server using easingthemes/ssh-deploy
+      # Step 4: Ensure correct permissions on the target directory
+      - name: Set Permissions on EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST_DNS }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo mkdir -p /var/lib/tomcat9/webapps/
+            sudo chown -R ${{ secrets.USERNAME }}:$${{ secrets.USERNAME }} /var/lib/tomcat9/webapps/
+            sudo chmod -R 775 /var/lib/tomcat9/webapps/
+
+      # Step 5: Deploy WAR to Server using easingthemes/ssh-deploy
       - name: Deploy WAR to Server
         uses: easingthemes/ssh-deploy@main
         env:
@@ -37,12 +48,11 @@ jobs:
           source: target/java-hello-app-1.0-SNAPSHOT.war
           target: /var/lib/tomcat9/webapps/
 
-      # Step 5: Executing remote SSH commands to restart Tomcat
+      # Step 6: Restart Tomcat on EC2
       - name: Restart Tomcat
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST_DNS }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            sudo systemctl restart tomcat9
+          script: sudo systemctl restart tomcat9
