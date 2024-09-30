@@ -41,16 +41,15 @@ jobs:
             sudo chown -R tomcat:tomcat /var/lib/tomcat9/webapps/
             sudo chmod -R 775 /var/lib/tomcat9/webapps/
 
-      # Step 6: Deploy the renamed WAR file to EC2
-      - name: Deploy to EC2
-        uses: easingthemes/ssh-deploy@main
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
-          REMOTE_HOST: ${{ secrets.HOST_DNS }}
-          REMOTE_USER: ${{ secrets.USERNAME }}
+      # Step 6: Deploy the renamed WAR file to EC2 using sudo for rsync
+      - name: Deploy WAR file with sudo
+        uses: appleboy/ssh-action@master
         with:
-          source: target/java-hello-app.war
-          target: /var/lib/tomcat9/webapps/
+          host: ${{ secrets.HOST_DNS }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo rsync -avz target/java-hello-app.war /var/lib/tomcat9/webapps/
 
       # Step 7: Restart Tomcat on EC2
       - name: Restart Tomcat
