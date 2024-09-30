@@ -29,37 +29,16 @@ jobs:
       - name: Rename WAR file
         run: mv target/java-hello-app-1.0-SNAPSHOT.war target/java-hello-app.war
 
-      # Step 5: Copy WAR file to a temporary directory
-      - name: Copy WAR file to /tmp directory
-        run: cp target/java-hello-app.war /tmp/
+      # Step 5: List contents of the target directory to verify the WAR file exists
+      - name: Verify WAR file exists
+        run: ls -l target/
 
-      # Step 6: Debugging Step - Verify the target directory exists
-      - name: List contents of the /tmp directory
-        run: ls -l /tmp/
+      # Step 6: Use rsync from GitHub runner to transfer WAR file to EC2
+      - name: Rsync WAR file to EC2
+        run: |
+          rsync -avz -e "ssh -o StrictHostKeyChecking=no -i ${{ secrets.EC2_SSH_KEY }}" target/java-hello-app.war ${{ secrets.USERNAME }}@${{ secrets.HOST_DNS }}:/var/lib/tomcat9/webapps/
 
-      # Step 7: Ensure the webapps directory exists and set correct permissions on the EC2 instance
-      - name: Ensure correct permissions on /var/lib/tomcat9/webapps/
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST_DNS }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            sudo mkdir -p /var/lib/tomcat9/webapps/
-            sudo chown -R tomcat:tomcat /var/lib/tomcat9/webapps/
-            sudo chmod -R 775 /var/lib/tomcat9/webapps/
-
-      # Step 8: Deploy the renamed WAR file to EC2 using sudo for rsync
-      - name: Deploy WAR file with sudo
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST_DNS }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            sudo rsync -avz /tmp/java-hello-app.war /var/lib/tomcat9/webapps/
-
-      # Step 9: Restart Tomcat on EC2
+      # Step 7: Restart Tomcat on EC2
       - name: Restart Tomcat
         uses: appleboy/ssh-action@master
         with:
