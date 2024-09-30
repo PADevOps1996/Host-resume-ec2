@@ -25,26 +25,38 @@ jobs:
       - name: Build with Maven
         run: mvn clean package
 
-      # Step 4: Deploy to EC2 via SSH
-      - name: Deploy to EC2
-        uses: easingthemes/ssh-deploy@main
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
-          REMOTE_HOST: ${{ secrets.HOST_DNS }}
-          REMOTE_USER: ${{ secrets.USERNAME }}
-          TARGET: ${{ secrets.TARGET_DIR1 }}
-        with:
-          source: target/java-hello-app.war
-          target: ${{ secrets.TARGET_DIR1 }}
+      # Step 4: Verify if the WAR file exists
+      - name: Verify if WAR file exists
+        run: ls -l target/
 
-      # Step 5: Execute remote SSH commands to install Tomcat and restart the server
-      - name: Execute remote SSH commands
+      # Step 5: Create webapps directory on remote host if not exists
+      - name: Ensure webapps directory on EC2
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST_DNS }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            sudo apt-get update
-            sudo apt-get install -y tomcat9
+            sudo mkdir -p /var/lib/tomcat9/webapps/
+            sudo chown tomcat:tomcat /var/lib/tomcat9/webapps/
+
+      # Step 6: Deploy to EC2 via rsync
+      - name: Deploy to EC2
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.HOST_DNS }}
+          REMOTE_USER: ${{ secrets.USERNAME }}
+        with:
+          source: target/java-hello-app.war
+          target: /var/lib/tomcat9/webapps/
+
+      # Step 7: Restart Tomcat on EC2
+      - name: Restart Tomcat
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST_DNS }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
             sudo systemctl restart tomcat9
