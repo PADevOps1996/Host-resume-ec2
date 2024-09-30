@@ -15,11 +15,11 @@ jobs:
       - name: Checkout the files
         uses: actions/checkout@v2
 
-      # Step 2: Set up JDK 17
-      - name: Set up JDK 17
+      # Step 2: Set up JDK 21
+      - name: Set up JDK 21
         uses: actions/setup-java@v1
         with:
-          java-version: '17'
+          java-version: '21'  # Updated to Java 21
 
       # Step 3: Build the WAR file using Maven
       - name: Build with Maven
@@ -34,7 +34,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             sudo mkdir -p /var/lib/tomcat9/webapps/
-            sudo chown -R ${{ secrets.USERNAME }}:$${{ secrets.USERNAME }} /var/lib/tomcat9/webapps/
+            sudo chown -R ${{ secrets.USERNAME }}:${{ secrets.USERNAME }} /var/lib/tomcat9/webapps/
             sudo chmod -R 775 /var/lib/tomcat9/webapps/
 
       # Step 5: Deploy WAR to Server using easingthemes/ssh-deploy
